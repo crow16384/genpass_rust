@@ -1,11 +1,19 @@
-use genpass::Password;
+#[derive(Debug)]
+enum Ex {
+    One(u8),
+    Two(u8),
+}
 
 fn main() {
-    if let Err(e) = genpass::get_config() {
-        eprint!("{}", e);
-        std::process::exit(1);
-    }
+    let conf = genpass::get_config();
 
-    let s = String::from("a4");
-    println!("{:?}",Password::from(s));
+    println!("{:?}",conf);
+    println!("{:?}",conf.format[0]);
+
+   let ee = Ex::Two(10);
+   if let Ex::Two(d) = ee {
+    println!("{:?}",d);
+   }
+   //println!("{:?}",ee[0]);
+
 }

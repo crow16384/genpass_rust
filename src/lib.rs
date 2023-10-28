@@ -1,9 +1,8 @@
 use clap::{ArgAction, Command, Arg};
-use std::error::Error;
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
-pub enum Password {
+pub enum PassElements {
     Word(u8),       // Readable words
     Digits(u8),     // Digits
     Special(u8),    // Special symbols
@@ -17,32 +16,32 @@ fn get_digits (value: &[char]) -> Option<u8> {
     digs.parse::<u8>().ok()
 }
 
-impl From<String> for Password {
-    fn from(value: String) -> Self {        
+impl From<&String> for PassElements {
+    fn from(value: &String) -> Self {        
         let val: Vec<char> = value.chars().collect();
         match &val[..] {
             ['w', digs @ ..] => {
                 match get_digits(digs) {
-                    Some(d) => Password::Word(d),
-                    None => Password::FormatError,
+                    Some(d) => PassElements::Word(d),
+                    None => PassElements::FormatError,
                 }
             },
             ['d', digs @ ..] => {
                 match get_digits(digs) {
-                    Some(d) => Password::Digits(d),
-                    None => Password::FormatError,
+                    Some(d) => PassElements::Digits(d),
+                    None => PassElements::FormatError,
                 }
             },
             ['s', digs @ ..] => {
                 match get_digits(digs) {
-                    Some(d) => Password::Special(d),
-                    None => Password::FormatError,
+                    Some(d) => PassElements::Special(d),
+                    None => PassElements::FormatError,
                 }
             },
             ['a', digs @ ..] => {
                 match get_digits(digs) {
-                    Some(d) => Password::Any(d),
-                    None => Password::FormatError,
+                    Some(d) => PassElements::Any(d),
+                    None => PassElements::FormatError,
                 }
             },
             _ => Self::FormatError,
@@ -50,20 +49,17 @@ impl From<String> for Password {
     }
 }
 
-type MyResult<T> = Result<T, Box<dyn Error>>;
-
 #[derive(Debug)]
 pub struct Config {
-    format: Vec<Password>, 
+    pub format: Vec<PassElements>, 
 }
 
-
 /// Parse a command line and return Result with Config
-pub fn get_config() -> MyResult<Config> {
+pub fn get_config() -> Config {
     let matches = Command::new("genpass")
             .version("0.1.0")
             .author("Crow16384 <crow16384@yandex.ru>")
-            .about("Password generator")
+            .about("PassElements generator")
             .arg(
                 Arg::new("format")
                     .action(ArgAction::Append)
@@ -73,13 +69,11 @@ pub fn get_config() -> MyResult<Config> {
             )
             .get_matches();
 
-    let fmt: Vec<String> = matches
+    let fmt: Vec<PassElements> = matches
                 .get_many::<String>("format")
                 .unwrap_or_default()
-                .map(|v| v.to_string())
+                .map(|v| PassElements::from(v))
                 .collect();
-    println!("{:?}",fmt);
 
-    Ok(Config { format: vec![Password::Word(4), Password::Special(1), Password::Digits(4)] })
+    Config { format: fmt }
 }
-
