@@ -1,0 +1,64 @@
+{
+    // Используйте IntelliSense, чтобы узнать о возможных атрибутах.
+    // Наведите указатель мыши, чтобы просмотреть описания существующих атрибутов.
+    // Для получения дополнительной информации посетите: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'genpass'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=genpass"
+                ],
+                "filter": {
+                    "name": "genpass",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'genpass'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=genpass",
+                    "--package=genpass"
+                ],
+                "filter": {
+                    "name": "genpass",
+                    "kind": "bin"
+                }
+            },
+            "args": ["w4","s3","d5"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'genpass'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=genpass",
+                    "--package=genpass"
+                ],
+                "filter": {
+                    "name": "genpass",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

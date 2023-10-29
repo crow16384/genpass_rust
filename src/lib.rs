@@ -45,7 +45,7 @@ const MAX_WORD_LENGTH: u8 = 10;
 
 #[derive(Debug)]
 pub struct Config {
-    pub format: Vec<PassElements>,
+    format: Vec<PassElements>,
 }
 
 impl Config {
@@ -72,11 +72,45 @@ impl Config {
 
         Config { format: fmt }
     }
+
+    /// Check the Config. FormatError items must be pointed out to user
+    /// if any. If password elements are fine then return Config for the further
+    /// processing.
+    pub fn check(self) -> Self {
+        use PassElements::*;
+
+        let mut bad_fmt_indx = vec![];
+        let mut error_flag = false;
+
+        for (pos, e) in self.format.iter().enumerate() {
+            match e {
+                FormatError => {
+                bad_fmt_indx.push(pos+1);
+                error_flag = true;
+                },
+                _ => (),
+            }
+        }
+        if error_flag {
+            eprint!("Error in password element(s) ##: ");
+            for i in bad_fmt_indx {
+                eprint!("{} ", i);
+            }
+            eprintln!("\n\nFormat: [x][d]");
+            eprintln!("  where x could be 'w' (word),'d' (digits),");
+            eprintln!("                   'a' (any char),'s' (special)");
+            eprintln!("        d - length of the element");
+            eprintln!("Example: genpass w4 s2 d3");
+            eprintln!("Will produce like: Dihu#?123");
+            std::process::exit(1); 
+        }
+        self
+    }
 }
 
 impl PassElements {
     /// Get length of the element for further construction
-    fn get_len(self) -> Option<u8> {
+    fn len(self) -> Option<u8> {
         use PassElements::*;
 
         match self {
@@ -90,9 +124,9 @@ impl PassElements {
 fn test_get_len() {
     use PassElements::*;
 
-    assert_eq!(Some(11), Word(11).get_len());
-    assert_eq!(Some(6), Special(6).get_len());
-    assert_eq!(Some(4), Any(4).get_len());
-    assert_eq!(Some(23), Digits(23).get_len());
-    assert_eq!(None, FormatError.get_len());
+    assert_eq!(Some(11), Word(11).len());
+    assert_eq!(Some(6), Special(6).len());
+    assert_eq!(Some(4), Any(4).len());
+    assert_eq!(Some(23), Digits(23).len());
+    assert_eq!(None, FormatError.len());
 }
