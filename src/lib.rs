@@ -1,4 +1,8 @@
 use clap::{crate_authors, crate_description, crate_version, Arg, ArgAction, Command};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
+
+const MAX_WORD_LENGTH: u8 = 10;
+//const PRG: &str = "genpass";
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
@@ -40,8 +44,6 @@ impl From<&String> for PassElements {
         }
     }
 }
-
-const MAX_WORD_LENGTH: u8 = 10;
 
 #[derive(Debug)]
 pub struct Config {
@@ -85,10 +87,15 @@ impl Config {
         for (pos, e) in self.format.iter().enumerate() {
             match e {
                 FormatError => {
-                bad_fmt_indx.push(pos+1);
-                error_flag = true;
-                },
-                _ => (),
+                    bad_fmt_indx.push(pos + 1);
+                    error_flag = true;
+                }
+                Word(d) | Digits(d) | Special(d) | Any(d) => {
+                    if d > &MAX_WORD_LENGTH {
+                        bad_fmt_indx.push(pos + 1);
+                        error_flag = true;
+                    }
+                }
             }
         }
         if error_flag {
@@ -100,14 +107,15 @@ impl Config {
             eprintln!("  where x could be 'w' (word),'d' (digits),");
             eprintln!("                   'a' (any char),'s' (special)");
             eprintln!("        d - length of the element");
-            eprintln!("Example: genpass w4 s2 d3");
+            eprintln!("  MAX element length = {}", MAX_WORD_LENGTH);
+            eprintln!("\n\nExample: genpass w4 s2 d3");
             eprintln!("Will produce like: Dihu#?123");
-            std::process::exit(1); 
+            std::process::exit(1);
         }
         self
     }
 }
-
+/*
 impl PassElements {
     /// Get length of the element for further construction
     fn len(self) -> Option<u8> {
@@ -119,14 +127,66 @@ impl PassElements {
         }
     }
 }
+*/
+pub struct Generator {
+    rng: ThreadRng,
+}
 
-#[test]
-fn test_get_len() {
-    use PassElements::*;
+static VOWELS: [char; 6] = ['a', 'e', 'i', 'o', 'u', 'y'];
+static CONSONANTS: [char; 20] = [
+    'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x',
+    'z',
+];
+static DIGITS: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+static SPECIAL: [char; 25] = [
+    '!', '@', '#', '$', '%', '^', '&', '*', '~', '>', '<', '(', ')', '\\', '/', ',', '=', ';', ':',
+    '+', '-', '.', '[', ']', '_',
+];
 
-    assert_eq!(Some(11), Word(11).len());
-    assert_eq!(Some(6), Special(6).len());
-    assert_eq!(Some(4), Any(4).len());
-    assert_eq!(Some(23), Digits(23).len());
-    assert_eq!(None, FormatError.len());
+impl Generator {
+    /// Mainly it's just a generator thread from rand package
+    pub fn new() -> Self {
+        Generator { rng: thread_rng() }
+    }
+
+    /// Implement a `word` generation
+    pub fn gen_word(&mut self, len: usize) -> String {
+        let mut word: Vec<char> = vec![];
+
+        for i in 0..len {
+            if i % 2 == 0 {
+                let idx = self.rng.gen_range(0..CONSONANTS.len());
+                word.push(CONSONANTS[idx]);
+            } else {
+                let idx = self.rng.gen_range(0..VOWELS.len());
+                word.push(VOWELS[idx]);
+            }
+        }
+
+        word.into_iter().collect()
+    }
+
+    /// Implement a `digits` generation
+    pub fn gen_digits(&mut self, len: usize) -> String {
+        let mut digits: Vec<char> = vec![];
+
+        for _ in 0..len {
+            let idx = self.rng.gen_range(0..DIGITS.len());
+            digits.push(DIGITS[idx]);
+        }
+
+        digits.into_iter().collect()
+    }
+
+    /// Implement a `special chars` generation
+    pub fn gen_special(&mut self, len: usize) -> String {
+        let mut spec: Vec<char> = vec![];
+
+        for _ in 0..len {
+            let idx = self.rng.gen_range(0..SPECIAL.len());
+            spec.push(SPECIAL[idx]);
+        }
+
+        spec.into_iter().collect()
+    }
 }
