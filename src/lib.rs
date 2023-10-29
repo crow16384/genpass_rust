@@ -116,6 +116,13 @@ impl Config {
     }
 }
 
+
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Generator {
     rng: ThreadRng,
 }
@@ -187,10 +194,16 @@ impl Generator {
             match e {
                 Word(d) => password.push(self.gen_word(d)),
                 Digits(d) => password.push(self.gen_digits(d)),
-                Special(d) => password.push(self.gen_special(d)),        
+                Special(d) => password.push(self.gen_special(d)),
                 _ => (),
             }
         }
-        password.join("")       
+        password.join("")
+    }
+}
+
+impl Default for Generator {
+    fn default() -> Self {
+        Self::new()
     }
 }
