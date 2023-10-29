@@ -115,19 +115,7 @@ impl Config {
         self
     }
 }
-/*
-impl PassElements {
-    /// Get length of the element for further construction
-    fn len(self) -> Option<u8> {
-        use PassElements::*;
 
-        match self {
-            Word(d) | Digits(d) | Special(d) | Any(d) => Some(d),
-            _ => None,
-        }
-    }
-}
-*/
 pub struct Generator {
     rng: ThreadRng,
 }
@@ -150,7 +138,7 @@ impl Generator {
     }
 
     /// Implement a `word` generation
-    pub fn gen_word(&mut self, len: usize) -> String {
+    fn gen_word(&mut self, len: u8) -> String {
         let mut word: Vec<char> = vec![];
 
         for i in 0..len {
@@ -167,7 +155,7 @@ impl Generator {
     }
 
     /// Implement a `digits` generation
-    pub fn gen_digits(&mut self, len: usize) -> String {
+    fn gen_digits(&mut self, len: u8) -> String {
         let mut digits: Vec<char> = vec![];
 
         for _ in 0..len {
@@ -179,7 +167,7 @@ impl Generator {
     }
 
     /// Implement a `special chars` generation
-    pub fn gen_special(&mut self, len: usize) -> String {
+    fn gen_special(&mut self, len: u8) -> String {
         let mut spec: Vec<char> = vec![];
 
         for _ in 0..len {
@@ -188,5 +176,21 @@ impl Generator {
         }
 
         spec.into_iter().collect()
+    }
+
+    pub fn run(&mut self, elements: Config) -> String {
+        use PassElements::*;
+
+        let mut password: Vec<String> = vec![];
+
+        for e in elements.format {
+            match e {
+                Word(d) => password.push(self.gen_word(d)),
+                Digits(d) => password.push(self.gen_digits(d)),
+                Special(d) => password.push(self.gen_special(d)),        
+                _ => (),
+            }
+        }
+        password.join("")       
     }
 }
