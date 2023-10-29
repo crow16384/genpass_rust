@@ -1,19 +1,7 @@
-#[derive(Debug)]
-enum Ex {
-    One(u8),
-    Two(u8),
-}
+use genpass::Config;
 
 fn main() {
-    let conf = genpass::get_config();
+    let conf = Config::new();
 
-    println!("{:?}",conf);
-    println!("{:?}",conf.format[0]);
-
-   let ee = Ex::Two(10);
-   if let Ex::Two(d) = ee {
-    println!("{:?}",d);
-   }
-   //println!("{:?}",ee[0]);
-
+    println!("{:?}", conf);
 }

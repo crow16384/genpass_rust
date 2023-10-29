@@ -1,65 +1,60 @@
-use clap::{ArgAction, Command, Arg};
+use clap::{crate_authors, crate_description, crate_version, Arg, ArgAction, Command};
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
 pub enum PassElements {
-    Word(u8),       // Readable words
-    Digits(u8),     // Digits
-    Special(u8),    // Special symbols
-    Any(u8),        // Any character, digit or special symbol
-    FormatError     // Incorrect format
+    Word(u8),    // Readable words
+    Digits(u8),  // Digits
+    Special(u8), // Special symbols
+    Any(u8),     // Any character, digit or special symbol
+    FormatError, // Incorrect format
 }
 
-/// Return optionat u8 digit from string
-fn get_digits (value: &[char]) -> Option<u8> {
+/// Return optional u8 digit from string
+fn get_digits(value: &[char]) -> Option<u8> {
     let digs: String = value.iter().collect();
     digs.parse::<u8>().ok()
 }
 
 impl From<&String> for PassElements {
-    fn from(value: &String) -> Self {        
+    fn from(value: &String) -> Self {
         let val: Vec<char> = value.chars().collect();
         match &val[..] {
-            ['w', digs @ ..] => {
-                match get_digits(digs) {
-                    Some(d) => PassElements::Word(d),
-                    None => PassElements::FormatError,
-                }
+            ['w', digs @ ..] => match get_digits(digs) {
+                Some(d) => PassElements::Word(d),
+                None => PassElements::FormatError,
             },
-            ['d', digs @ ..] => {
-                match get_digits(digs) {
-                    Some(d) => PassElements::Digits(d),
-                    None => PassElements::FormatError,
-                }
+            ['d', digs @ ..] => match get_digits(digs) {
+                Some(d) => PassElements::Digits(d),
+                None => PassElements::FormatError,
             },
-            ['s', digs @ ..] => {
-                match get_digits(digs) {
-                    Some(d) => PassElements::Special(d),
-                    None => PassElements::FormatError,
-                }
+            ['s', digs @ ..] => match get_digits(digs) {
+                Some(d) => PassElements::Special(d),
+                None => PassElements::FormatError,
             },
-            ['a', digs @ ..] => {
-                match get_digits(digs) {
-                    Some(d) => PassElements::Any(d),
-                    None => PassElements::FormatError,
-                }
+            ['a', digs @ ..] => match get_digits(digs) {
+                Some(d) => PassElements::Any(d),
+                None => PassElements::FormatError,
             },
             _ => Self::FormatError,
         }
     }
 }
 
+const MAX_WORD_LENGTH: u8 = 10;
+
 #[derive(Debug)]
 pub struct Config {
-    pub format: Vec<PassElements>, 
+    pub format: Vec<PassElements>,
 }
 
-/// Parse a command line and return Result with Config
-pub fn get_config() -> Config {
-    let matches = Command::new("genpass")
-            .version("0.1.0")
-            .author("Crow16384 <crow16384@yandex.ru>")
-            .about("PassElements generator")
+impl Config {
+    /// Parse a command line and return Result with Config
+    pub fn new() -> Self {
+        let matches = Command::new("genpass")
+            .version(crate_version!())
+            .author(crate_authors!())
+            .about(crate_description!())
             .arg(
                 Arg::new("format")
                     .action(ArgAction::Append)
@@ -69,11 +64,35 @@ pub fn get_config() -> Config {
             )
             .get_matches();
 
-    let fmt: Vec<PassElements> = matches
-                .get_many::<String>("format")
-                .unwrap_or_default()
-                .map(|v| PassElements::from(v))
-                .collect();
+        let fmt: Vec<PassElements> = matches
+            .get_many::<String>("format")
+            .unwrap_or_default()
+            .map(|v| PassElements::from(v))
+            .collect();
 
-    Config { format: fmt }
+        Config { format: fmt }
+    }
+}
+
+impl PassElements {
+    /// Get length of the element for further construction
+    fn get_len(self) -> Option<u8> {
+        use PassElements::*;
+
+        match self {
+            Word(d) | Digits(d) | Special(d) | Any(d) => Some(d),
+            _ => None,
+        }
+    }
+}
+
+#[test]
+fn test_get_len() {
+    use PassElements::*;
+
+    assert_eq!(Some(11), Word(11).get_len());
+    assert_eq!(Some(6), Special(6).get_len());
+    assert_eq!(Some(4), Any(4).get_len());
+    assert_eq!(Some(23), Digits(23).get_len());
+    assert_eq!(None, FormatError.get_len());
 }
