@@ -69,7 +69,7 @@ impl Config {
         let fmt: Vec<PassElements> = matches
             .get_many::<String>("format")
             .unwrap_or_default()
-            .map(|v| PassElements::from(v))
+            .map(PassElements::from)
             .collect();
 
         Config { format: fmt }
