@@ -1,53 +1,72 @@
 use clap::{crate_authors, crate_description, crate_version, Arg, ArgAction, Command};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
+use std::convert::TryFrom;
+use thiserror::Error;
 
 const MAX_WORD_LENGTH: u8 = 10;
 //const PRG: &str = "genpass";
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
-pub enum PassElements {
+enum PassElements {
     Word(u8),    // Readable words
     Digits(u8),  // Digits
     Special(u8), // Special symbols
     Any(u8),     // Any character, digit or special symbol
-    FormatError, // Incorrect format
 }
 
-/// Return optional u8 digit from string
-fn get_digits(value: &[char]) -> Option<u8> {
-    let digs: String = value.iter().collect();
-    digs.parse::<u8>().ok()
+#[derive(Debug, Error)]
+enum ConfigError {
+    #[error("invalid element type (first character): {0}")]
+    InvalidElementType(char),
+    #[error("invalid element whole length (must be 2 or 3)")]
+    InvalidTotalLength,
+    #[error("invalid element length provided: {0}")]
+    ParseElementLengthError(#[from] std::num::ParseIntError),
+    #[error("element length can't be '0'")]
+    ZeroElementLength,
+    #[error("max element length exceede ({0})", MAX_WORD_LENGTH)]
+    MaxElementLengthError,
 }
 
-impl From<&String> for PassElements {
-    fn from(value: &String) -> Self {
+impl TryFrom<&String> for PassElements {
+    type Error = ConfigError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        if value.len() < 2 || value.len() > 3 {
+            return Err(ConfigError::InvalidTotalLength);
+        }
+
         let val: Vec<char> = value.chars().collect();
-        match &val[..] {
-            ['w', digs @ ..] => match get_digits(digs) {
-                Some(d) => PassElements::Word(d),
-                None => PassElements::FormatError,
-            },
-            ['d', digs @ ..] => match get_digits(digs) {
-                Some(d) => PassElements::Digits(d),
-                None => PassElements::FormatError,
-            },
-            ['s', digs @ ..] => match get_digits(digs) {
-                Some(d) => PassElements::Special(d),
-                None => PassElements::FormatError,
-            },
-            ['a', digs @ ..] => match get_digits(digs) {
-                Some(d) => PassElements::Any(d),
-                None => PassElements::FormatError,
-            },
-            _ => Self::FormatError,
+        let valid: Vec<char> = vec!['w', 'd', 's', 'a'];
+
+        if !valid.contains(&val[0]) {
+            return Err(ConfigError::InvalidElementType(val[0]));
+        }
+
+        let d = value[1..].parse::<u8>()?;
+
+        if d == 0 {
+            return Err(ConfigError::ZeroElementLength);
+        }
+
+        if d > MAX_WORD_LENGTH {
+            return Err(ConfigError::MaxElementLengthError);
+        }
+
+        match &val[0] {
+            'w' => Ok(Self::Word(d)),
+            'd' => Ok(Self::Digits(d)),
+            's' => Ok(Self::Special(d)),
+            'a' => Ok(Self::Any(d)),
+            c => Err(ConfigError::InvalidElementType(*c)),
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Config {
-    format: Vec<PassElements>,
+    format: Vec<Result<PassElements, ConfigError>>,
 }
 
 impl Config {
@@ -66,10 +85,10 @@ impl Config {
             )
             .get_matches();
 
-        let fmt: Vec<PassElements> = matches
+        let fmt: Vec<Result<PassElements, ConfigError>> = matches
             .get_many::<String>("format")
             .unwrap_or_default()
-            .map(PassElements::from)
+            .map(PassElements::try_from)
             .collect();
 
         Config { format: fmt }
@@ -79,25 +98,20 @@ impl Config {
     /// if any. If password elements are fine then return Config for the further
     /// processing.
     pub fn check(self) -> Self {
-        use PassElements::*;
-
         let mut bad_fmt_indx = vec![];
         let mut error_flag = false;
 
-        for (pos, e) in self.format.iter().enumerate() {
-            match e {
-                FormatError => {
+        for (pos, el) in self.format.iter().enumerate() {
+            match el {
+                Err(er) => {
+                    eprintln!("Error: {}\n\n", er);
                     bad_fmt_indx.push(pos + 1);
                     error_flag = true;
                 }
-                Word(d) | Digits(d) | Special(d) | Any(d) => {
-                    if d > &MAX_WORD_LENGTH {
-                        bad_fmt_indx.push(pos + 1);
-                        error_flag = true;
-                    }
-                }
+                Ok(_) => (),
             }
         }
+
         if error_flag {
             eprint!("Error in password element(s) ##: ");
             for i in bad_fmt_indx {
@@ -115,7 +129,6 @@ impl Config {
         self
     }
 }
-
 
 impl Default for Config {
     fn default() -> Self {
@@ -192,9 +205,9 @@ impl Generator {
 
         for e in elements.format {
             match e {
-                Word(d) => password.push(self.gen_word(d)),
-                Digits(d) => password.push(self.gen_digits(d)),
-                Special(d) => password.push(self.gen_special(d)),
+                Ok(Word(d)) => password.push(self.gen_word(d)),
+                Ok(Digits(d)) => password.push(self.gen_digits(d)),
+                Ok(Special(d)) => password.push(self.gen_special(d)),
                 _ => (),
             }
         }
@@ -207,3 +220,16 @@ impl Default for Generator {
         Self::new()
     }
 }
+
+/*#[cfg(test)]
+mod test {
+    use super::{Config, PassElements};
+    use std::convert::TryFrom;
+
+    fn convert_valid_element() {
+        let expected = Config { format: vec![Ok(PassElements::Word(8))] };
+        let actual = Config::try_from(&String::from("w8"));
+        assert!(actual.is_ok(), "valid element should be converted to Config");
+        //assert_eq!(actual.unwrap(), expected, "wrong element value");
+    }
+}*/
