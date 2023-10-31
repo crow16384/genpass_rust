@@ -23,7 +23,7 @@ impl Generator {
     }
 
     /// Implement a `word` generation
-    fn gen_word(&mut self, len: u8) -> String {
+    fn gen_word(&mut self, len: u8, upcase: bool) -> String {
         let mut word: Vec<char> = vec![];
 
         for i in 0..len {
@@ -34,6 +34,10 @@ impl Generator {
                 let idx = self.rng.gen_range(0..VOWELS.len());
                 word.push(VOWELS[idx]);
             }
+        }
+
+        if upcase {
+            word[0].make_ascii_uppercase()
         }
 
         word.into_iter().collect()
@@ -70,7 +74,8 @@ impl Generator {
 
         for e in elements.format {
             match e {
-                Ok(Word(d)) => password.push(self.gen_word(d)),
+                Ok(UWord(d)) => password.push(self.gen_word(d, true)),
+                Ok(Word(d)) => password.push(self.gen_word(d, false)),
                 Ok(Digits(d)) => password.push(self.gen_digits(d)),
                 Ok(Special(d)) => password.push(self.gen_special(d)),
                 _ => (),

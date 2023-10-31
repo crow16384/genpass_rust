@@ -1,4 +1,6 @@
-use clap::{crate_authors, crate_description, crate_version, Arg, ArgAction, Command};
+use clap::{
+    crate_authors, crate_description, crate_version, value_parser, Arg, ArgAction, Command,
+};
 use std::convert::TryFrom;
 use thiserror::Error;
 
@@ -9,9 +11,9 @@ const MAX_WORD_LENGTH: u8 = 10;
 #[derive(Debug)]
 pub enum PassElements {
     Word(u8),    // Readable words
+    UWord(u8),   // Readable words started with upcase letter
     Digits(u8),  // Digits
     Special(u8), // Special symbols
-    Any(u8),     // Any character, digit or special symbol
 }
 
 #[derive(Debug, Error)]
@@ -37,7 +39,7 @@ impl TryFrom<&String> for PassElements {
         }
 
         let val: Vec<char> = value.chars().collect();
-        let valid: Vec<char> = vec!['w', 'd', 's', 'a'];
+        let valid: Vec<char> = vec!['W', 'w', 'd', 's'];
 
         if !valid.contains(&val[0]) {
             return Err(ConfigError::InvalidElementType(val[0]));
@@ -54,10 +56,10 @@ impl TryFrom<&String> for PassElements {
         }
 
         match &val[0] {
+            'W' => Ok(Self::UWord(d)),
             'w' => Ok(Self::Word(d)),
             'd' => Ok(Self::Digits(d)),
             's' => Ok(Self::Special(d)),
-            'a' => Ok(Self::Any(d)),
             c => Err(ConfigError::InvalidElementType(*c)),
         }
     }
@@ -66,6 +68,7 @@ impl TryFrom<&String> for PassElements {
 #[derive(Debug)]
 pub struct Config {
     pub format: Vec<Result<PassElements, ConfigError>>,
+    pub quantity: u8,
 }
 
 impl Config {
@@ -76,21 +79,39 @@ impl Config {
             .author(crate_authors!())
             .about(crate_description!())
             .arg(
+                Arg::new("count")
+                    .short('n')
+                    .long("quantity")
+                    .value_parser(value_parser!(u8))
+                    .action(ArgAction::Set)
+                    .value_name("COUNT")
+                    .default_value("1")
+                    .help("Number (quantity) of password to be generated"),
+            )
+            .arg(
                 Arg::new("format")
+                    //.short('f')
+                    //.long("format")
                     .action(ArgAction::Append)
                     .value_name("FORMAT")
-                    .help("Specify the password format")
-                    .default_value("w4 s1 d4"),
+                    .help("Specify the password format"),
             )
             .get_matches();
 
-        let fmt: Vec<Result<PassElements, ConfigError>> = matches
+        let format: Vec<Result<PassElements, ConfigError>> = matches
             .get_many::<String>("format")
             .unwrap_or_default()
             .map(PassElements::try_from)
             .collect();
 
-        Config { format: fmt }
+        let quantity: u8 = match matches.get_one("count") {
+            Some(d) => *d,
+            None => 1,
+        };
+
+        dbg!(quantity);
+
+        Config { format, quantity }
     }
 
     /// Check the Config. FormatError items must be pointed out to user
