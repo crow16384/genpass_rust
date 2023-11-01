@@ -26,7 +26,7 @@ pub enum ConfigError {
     ParseElementLengthError(#[from] std::num::ParseIntError),
     #[error("element length can't be '0'")]
     ZeroElementLength,
-    #[error("max element length exceede ({0})", MAX_WORD_LENGTH)]
+    #[error("max element length exceeded ({0})", MAX_WORD_LENGTH)]
     MaxElementLengthError,
 }
 
@@ -86,7 +86,8 @@ impl Config {
                     .action(ArgAction::Set)
                     .value_name("COUNT")
                     .default_value("1")
-                    .help("Number (quantity) of password to be generated"),
+                    .required(false)
+                    .help("Number (quantity) of passwords to be generated"),
             )
             .arg(
                 Arg::new("format")
@@ -94,6 +95,7 @@ impl Config {
                     //.long("format")
                     .action(ArgAction::Append)
                     .value_name("FORMAT")
+                    .required(true)
                     .help("Specify the password format"),
             )
             .get_matches();
@@ -108,8 +110,6 @@ impl Config {
             Some(d) => *d,
             None => 1,
         };
-
-        dbg!(quantity);
 
         Config { format, quantity }
     }
@@ -133,16 +133,17 @@ impl Config {
         }
 
         if error_flag {
-            eprint!("Error in password element(s) ##: ");
+            eprint!("Incorrect password element(s) ##: ");
             for i in bad_fmt_indx {
                 eprint!("{} ", i);
             }
             eprintln!("\n\nFormat: [x][d]");
-            eprintln!("  where x could be 'w' (word),'d' (upcase word),");
+            eprintln!("  where x could be 'w' (word),'W' (word's first letter is upcased),");
             eprintln!("                   'd' (digits), 's' (special chars)");
             eprintln!("        d - length of the element");
-            eprintln!("  MAX element length = {}", MAX_WORD_LENGTH);
+            eprintln!("  MAX element's length = {}", MAX_WORD_LENGTH);
             eprintln!("\n\nExample: genpass W4 s2 d3");
+            eprintln!("========");
             eprintln!("Will produce like: Dihu#?123");
             std::process::exit(1);
         }
