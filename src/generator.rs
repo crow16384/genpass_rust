@@ -1,10 +1,12 @@
 use crate::config::{Config, PassElements};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
+/// Generator structure. It contains only random number generator thread
 pub struct Generator {
     rng: ThreadRng,
 }
 
+/// Static arrays for fast getting
 static VOWELS: [char; 6] = ['a', 'e', 'i', 'o', 'u', 'y'];
 static CONSONANTS: [char; 20] = [
     'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x',
