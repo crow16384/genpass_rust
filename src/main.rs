@@ -3,9 +3,9 @@ mod generator;
 
 fn main() {
     let conf = config::Config::new().check();
-    let password = generator::Generator::new().run(conf);
+    let passwords = generator::Generator::new().run(conf);
 
-    println!("{}", password);
+    passwords.iter().for_each(|x| println!("{}", x));
 }
 
 /*#[cfg(test)]

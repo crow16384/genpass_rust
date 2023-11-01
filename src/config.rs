@@ -138,11 +138,11 @@ impl Config {
                 eprint!("{} ", i);
             }
             eprintln!("\n\nFormat: [x][d]");
-            eprintln!("  where x could be 'w' (word),'d' (digits),");
-            eprintln!("                   'a' (any char),'s' (special)");
+            eprintln!("  where x could be 'w' (word),'d' (upcase word),");
+            eprintln!("                   'd' (digits), 's' (special chars)");
             eprintln!("        d - length of the element");
             eprintln!("  MAX element length = {}", MAX_WORD_LENGTH);
-            eprintln!("\n\nExample: genpass w4 s2 d3");
+            eprintln!("\n\nExample: genpass W4 s2 d3");
             eprintln!("Will produce like: Dihu#?123");
             std::process::exit(1);
         }

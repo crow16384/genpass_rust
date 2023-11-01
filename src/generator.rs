@@ -67,21 +67,29 @@ impl Generator {
         spec.into_iter().collect()
     }
 
-    pub fn run(&mut self, elements: Config) -> String {
+    pub fn run(&mut self, elements: Config) -> Vec<String> {
         use PassElements::*;
 
-        let mut password: Vec<String> = vec![];
+        let mut passwords: Vec<String> = vec![]; // all generated passwords
+        let mut password: Vec<String> = vec![]; // single password during generation
 
-        for e in elements.format {
-            match e {
-                Ok(UWord(d)) => password.push(self.gen_word(d, true)),
-                Ok(Word(d)) => password.push(self.gen_word(d, false)),
-                Ok(Digits(d)) => password.push(self.gen_digits(d)),
-                Ok(Special(d)) => password.push(self.gen_special(d)),
-                _ => (),
+        let n = elements.quantity;
+
+        for _ in 0..n {
+            for e in &elements.format {
+                match e {
+                    Ok(UWord(d)) => password.push(self.gen_word(*d, true)),
+                    Ok(Word(d)) => password.push(self.gen_word(*d, false)),
+                    Ok(Digits(d)) => password.push(self.gen_digits(*d)),
+                    Ok(Special(d)) => password.push(self.gen_special(*d)),
+                    _ => (),
+                }
             }
+            let p = password.join("");
+            passwords.push(p);
+            password.clear();
         }
-        password.join("")
+        passwords
     }
 }
 
