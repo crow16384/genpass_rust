@@ -4,16 +4,15 @@ use clap::{
 use std::convert::TryFrom;
 use thiserror::Error;
 
-const MAX_WORD_LENGTH: u8 = 10;
-//const PRG: &str = "genpass";
+const MAX_WORD_LENGTH: usize = 10;
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
 pub enum PassElements {
-    Word(u8),    // Readable words
-    UWord(u8),   // Readable words started with upcase letter
-    Digits(u8),  // Digits
-    Special(u8), // Special symbols
+    Word(usize),    // Readable words
+    UWord(usize),   // Readable words started with upcase letter
+    Digits(usize),  // Digits
+    Special(usize), // Special symbols
 }
 
 #[derive(Debug, Error)]
@@ -45,7 +44,7 @@ impl TryFrom<&String> for PassElements {
             return Err(ConfigError::InvalidElementType(val[0]));
         }
 
-        let d = value[1..].parse::<u8>()?;
+        let d = value[1..].parse::<usize>()?;
 
         if d == 0 {
             return Err(ConfigError::ZeroElementLength);

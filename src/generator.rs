@@ -1,5 +1,5 @@
 use crate::config::{Config, PassElements};
-use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand::{rngs::ThreadRng, seq::SliceRandom, thread_rng};
 
 /// Generator structure. It contains only random number generator thread
 pub struct Generator {
@@ -18,6 +18,22 @@ static SPECIAL: [char; 25] = [
     '+', '-', '.', '[', ']', '_',
 ];
 
+/// Upcase the first letter in the string
+fn uppercase_first(data: &String) -> String {
+    // Uppercase first letter.
+    let mut result = String::new();
+    let mut first = true;
+    for value in data.chars() {
+        if first {
+            result.push(value.to_ascii_uppercase());
+            first = false;
+        } else {
+            result.push(value);
+        }
+    }
+    result
+}
+
 impl Generator {
     /// Mainly it's just a generator thread from rand package
     pub fn new() -> Self {
@@ -25,48 +41,49 @@ impl Generator {
     }
 
     /// Implement a `word` generation
-    fn gen_word(&mut self, len: u8, upcase: bool) -> String {
-        let mut word: Vec<char> = vec![];
+    fn gen_word(&mut self, len: usize, upcase: bool) -> String {
+        let mut word = String::with_capacity(len);
 
         for i in 0..len {
             if i % 2 == 0 {
-                let idx = self.rng.gen_range(0..CONSONANTS.len());
-                word.push(CONSONANTS[idx]);
+                if let Some(c) = CONSONANTS.choose(&mut self.rng) {
+                    word.push(*c);
+                }
             } else {
-                let idx = self.rng.gen_range(0..VOWELS.len());
-                word.push(VOWELS[idx]);
+                if let Some(c) = VOWELS.choose(&mut self.rng) {
+                    word.push(*c);
+                }
             }
         }
-
         if upcase {
-            word[0].make_ascii_uppercase()
+            uppercase_first(&word)
+        } else {
+            word
         }
-
-        word.into_iter().collect()
     }
 
     /// Implement a `digits` generation
-    fn gen_digits(&mut self, len: u8) -> String {
-        let mut digits: Vec<char> = vec![];
+    fn gen_digits(&mut self, len: usize) -> String {
+        let mut digits = String::with_capacity(len);
 
         for _ in 0..len {
-            let idx = self.rng.gen_range(0..DIGITS.len());
-            digits.push(DIGITS[idx]);
+            if let Some(d) = DIGITS.choose(&mut self.rng) {
+                digits.push(*d);
+            }
         }
-
-        digits.into_iter().collect()
+        digits
     }
 
     /// Implement a `special chars` generation
-    fn gen_special(&mut self, len: u8) -> String {
-        let mut spec: Vec<char> = vec![];
+    fn gen_special(&mut self, len: usize) -> String {
+        let mut spec = String::with_capacity(len);
 
         for _ in 0..len {
-            let idx = self.rng.gen_range(0..SPECIAL.len());
-            spec.push(SPECIAL[idx]);
+            if let Some(d) = SPECIAL.choose(&mut self.rng) {
+                spec.push(*d);
+            }
         }
-
-        spec.into_iter().collect()
+        spec
     }
 
     pub fn run(&mut self, elements: Config) -> Vec<String> {
