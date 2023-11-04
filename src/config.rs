@@ -90,8 +90,6 @@ impl Config {
             )
             .arg(
                 Arg::new("format")
-                    //.short('f')
-                    //.long("format")
                     .action(ArgAction::Append)
                     .value_name("FORMAT")
                     .required(true)
@@ -143,7 +141,7 @@ impl Config {
             eprintln!("  MAX element's length = {}", MAX_WORD_LENGTH);
             eprintln!("\n\nExample: genpass W4 s2 d3");
             eprintln!("========");
-            eprintln!("Will produce like: Dihu#?123");
+            eprintln!("Will produce something like: Dihu#?123");
             std::process::exit(1);
         }
         self
