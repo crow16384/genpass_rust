@@ -93,7 +93,17 @@ impl Config {
                     .action(ArgAction::Append)
                     .value_name("FORMAT")
                     .required(true)
-                    .help("Specify the password format"),
+                    .help(
+                        r#"Specify the password format [x][n]
+   where x could be:
+        'w' (word),
+        'W' (word's first letter is upcased),
+        'd' (digits), 's' (special chars).
+
+        n - length of the element.
+
+   Example: genpass W4 s2 d3 ==> something like: Dihu#?123"#,
+                    ),
             )
             .get_matches();
 
@@ -137,7 +147,7 @@ impl Config {
             eprintln!("\n\nFormat: [x][d]");
             eprintln!("  where x could be 'w' (word),'W' (word's first letter is upcased),");
             eprintln!("                   'd' (digits), 's' (special chars)");
-            eprintln!("        d - length of the element");
+            eprintln!("        n - length of the element");
             eprintln!("  MAX element's length = {}", MAX_WORD_LENGTH);
             eprintln!("\n\nExample: genpass W4 s2 d3");
             eprintln!("========");
