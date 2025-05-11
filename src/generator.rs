@@ -1,5 +1,5 @@
 use crate::config::{Config, PassElements};
-use rand::{rngs::ThreadRng, seq::SliceRandom, thread_rng};
+use rand::{prelude::IndexedRandom, rng, rngs::ThreadRng};
 
 /// Generator structure. It contains only random number generator thread
 pub struct Generator {
@@ -37,7 +37,7 @@ fn uppercase_first(data: &String) -> String {
 impl Generator {
     /// Mainly it's just a generator thread from rand package
     pub fn new() -> Self {
-        Generator { rng: thread_rng() }
+        Generator { rng: rng() }
     }
 
     /// Implement a `word` generation
