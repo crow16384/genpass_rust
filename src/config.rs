@@ -10,7 +10,7 @@ const MAX_WORD_LENGTH: usize = 10;
 #[derive(Debug)]
 pub enum PassElements {
     Word(usize),    // Readable words
-    UWord(usize),   // Readable words started with upcase letter
+    UWord(usize),   // Readable words started with upper case letter
     Digits(usize),  // Digits
     Special(usize), // Special symbols
 }
