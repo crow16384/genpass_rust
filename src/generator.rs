@@ -19,19 +19,8 @@ static SPECIAL: [char; 25] = [
 ];
 
 /// Upcase the first letter in the string
-fn uppercase_first(data: &String) -> String {
-    // Uppercase first letter.
-    let mut result = String::new();
-    let mut first = true;
-    for value in data.chars() {
-        if first {
-            result.push(value.to_ascii_uppercase());
-            first = false;
-        } else {
-            result.push(value);
-        }
-    }
-    result
+fn uppercase_first(s: &str) -> String {
+    s[0..1].to_uppercase() + &s[1..]
 }
 
 impl Generator {

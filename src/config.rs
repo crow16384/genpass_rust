@@ -67,7 +67,7 @@ impl TryFrom<&String> for PassElements {
 #[derive(Debug)]
 pub struct Config {
     pub format: Vec<Result<PassElements, ConfigError>>,
-    pub quantity: u8,
+    pub quantity: u32,
 }
 
 impl Config {
@@ -81,7 +81,7 @@ impl Config {
                 Arg::new("count")
                     .short('n')
                     .long("quantity")
-                    .value_parser(value_parser!(u8))
+                    .value_parser(value_parser!(u32))
                     .action(ArgAction::Set)
                     .value_name("COUNT")
                     .default_value("1")
@@ -113,7 +113,7 @@ impl Config {
             .map(PassElements::try_from)
             .collect();
 
-        let quantity: u8 = match matches.get_one("count") {
+        let quantity: u32 = match matches.get_one("count") {
             Some(d) => *d,
             None => 1,
         };
