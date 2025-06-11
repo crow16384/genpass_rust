@@ -103,7 +103,7 @@ impl Config {
 
         n - length of the element.
 
-   Example: genpass W4 s2 d3 ==> something like: Dihu#?123"#,
+   Example: genpass W4_s2_d3 ==> something like: Dihu#?123"#,
                     ),
             )
             .get_matches();
