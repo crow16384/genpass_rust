@@ -93,6 +93,7 @@ impl Config {
                     .action(ArgAction::Append)
                     .value_name("FORMAT")
                     .required(true)
+                    .value_delimiter('_')
                     .help(
                         r#"Specify the password format [x][n]
    where x could be:
