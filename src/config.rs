@@ -126,14 +126,14 @@ impl Config {
     /// if any. If password elements are fine then return Config for the further
     /// processing.
     pub fn check(self) -> Self {
-        let mut bad_fmt_indx = vec![];
+        let mut bad_fmt_index = vec![];
         let mut error_flag = false;
 
         for (pos, el) in self.format.iter().enumerate() {
             match el {
                 Err(er) => {
                     eprintln!("Error: {}\n\n", er);
-                    bad_fmt_indx.push(pos + 1);
+                    bad_fmt_index.push(pos + 1);
                     error_flag = true;
                 }
                 Ok(_) => (),
@@ -142,7 +142,7 @@ impl Config {
 
         if error_flag {
             eprint!("Incorrect password element(s) ##: ");
-            for i in bad_fmt_indx {
+            for i in bad_fmt_index {
                 eprint!("{} ", i);
             }
             eprintln!("\n\nFormat: [x][d]");
