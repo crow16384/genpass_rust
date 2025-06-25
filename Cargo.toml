@@ -1,6 +1,6 @@
 [package]
 name = "genpass"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Crow16384 <crow16384@yandex.ru>"]
 description = "Human readable password generator"

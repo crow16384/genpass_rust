@@ -38,10 +38,8 @@ impl Generator {
                 if let Some(c) = CONSONANTS.choose(&mut self.rng) {
                     word.push(*c);
                 }
-            } else {
-                if let Some(c) = VOWELS.choose(&mut self.rng) {
-                    word.push(*c);
-                }
+            } else if let Some(c) = VOWELS.choose(&mut self.rng) {
+                word.push(*c);
             }
         }
         if upcase {

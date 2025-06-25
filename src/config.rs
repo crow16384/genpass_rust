@@ -130,13 +130,10 @@ impl Config {
         let mut error_flag = false;
 
         for (pos, el) in self.format.iter().enumerate() {
-            match el {
-                Err(er) => {
-                    eprintln!("Error: {}\n\n", er);
-                    bad_fmt_index.push(pos + 1);
-                    error_flag = true;
-                }
-                Ok(_) => (),
+            if let Err(er) = el {
+                eprintln!("Error: {}\n\n", er);
+                bad_fmt_index.push(pos + 1);
+                error_flag = true;
             }
         }
 
