@@ -95,7 +95,7 @@ impl Config {
                     .required(true)
                     .value_delimiter('_')
                     .help(
-                        r#"Specify the password format [x][n]
+                        r#"Specify the password format [x][n]_...
    where x could be:
         'w' (word),
         'W' (word's first letter is upcased),
@@ -109,7 +109,7 @@ impl Config {
             .get_matches();
 
         let format: Vec<Result<PassElements, ConfigError>> = matches
-            .get_many::<String>("format")
+            .get_many("format")
             .unwrap_or_default()
             .map(PassElements::try_from)
             .collect();
@@ -142,12 +142,12 @@ impl Config {
             for i in bad_fmt_index {
                 eprint!("{} ", i);
             }
-            eprintln!("\n\nFormat: [x][d]");
+            eprintln!("\n\nFormat: [x][n]");
             eprintln!("  where x could be 'w' (word),'W' (word's first letter is upcased),");
             eprintln!("                   'd' (digits), 's' (special chars)");
             eprintln!("        n - length of the element");
             eprintln!("  MAX element's length = {}", MAX_WORD_LENGTH);
-            eprintln!("\n\nExample: genpass W4 s2 d3");
+            eprintln!("\n\nExample: genpass W4_s2_d3");
             eprintln!("========");
             eprintln!("Will produce something like: Dihu#?123");
             std::process::exit(1);
