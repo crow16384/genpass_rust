@@ -18,7 +18,7 @@ static SPECIAL: [char; 25] = [
     '+', '-', '.', '[', ']', '_',
 ];
 
-/// Upcase the first letter in the string
+/// Uppercase the first letter in the string
 fn uppercase_first(s: &str) -> String {
     s[0..1].to_uppercase() + &s[1..]
 }
@@ -30,8 +30,8 @@ impl Generator {
     }
 
     /// Implement a `word` generation
-    fn gen_word(&mut self, len: usize, upcase: bool) -> String {
-        let mut word = String::with_capacity(len);
+    fn gen_word(&mut self, len: usize, uppercase: bool) -> String {
+        let mut word: Vec<char> = Vec::with_capacity(len);
 
         for i in 0..len {
             if i % 2 == 0 {
@@ -42,7 +42,8 @@ impl Generator {
                 word.push(*c);
             }
         }
-        if upcase {
+        let word:String = word.into_iter().collect();
+        if uppercase {
             uppercase_first(&word)
         } else {
             word
@@ -51,26 +52,26 @@ impl Generator {
 
     /// Implement a `digits` generation
     fn gen_digits(&mut self, len: usize) -> String {
-        let mut digits = String::with_capacity(len);
+        let mut digits: Vec<char> = Vec::with_capacity(len);
 
         for _ in 0..len {
             if let Some(d) = DIGITS.choose(&mut self.rng) {
                 digits.push(*d);
             }
         }
-        digits
+        digits.into_iter().collect()
     }
 
     /// Implement a `special chars` generation
     fn gen_special(&mut self, len: usize) -> String {
-        let mut spec = String::with_capacity(len);
+        let mut spec: Vec<char> = Vec::with_capacity(len);
 
         for _ in 0..len {
             if let Some(d) = SPECIAL.choose(&mut self.rng) {
                 spec.push(*d);
             }
         }
-        spec
+        spec.into_iter().collect()
     }
 
     pub fn run(&mut self, elements: Config) -> Vec<String> {
