@@ -18,11 +18,6 @@ static SPECIAL: [char; 25] = [
     '+', '-', '.', '[', ']', '_',
 ];
 
-/// Uppercase the first letter in the string
-fn uppercase_first(s: &str) -> String {
-    s[0..1].to_uppercase() + &s[1..]
-}
-
 impl Generator {
     /// Mainly it's just a generator thread from rand package
     pub fn new() -> Self {
@@ -34,20 +29,21 @@ impl Generator {
         let mut word: Vec<char> = Vec::with_capacity(len);
 
         for i in 0..len {
+            let mut character: char = ' ';
             if i % 2 == 0 {
                 if let Some(c) = CONSONANTS.choose(&mut self.rng) {
-                    word.push(*c);
+                    character = *c;
                 }
             } else if let Some(c) = VOWELS.choose(&mut self.rng) {
-                word.push(*c);
+                character = *c;
             }
+            if i == 0 && uppercase {
+                character = character.to_ascii_uppercase();
+            }
+            word.push(character);
         }
-        let word:String = word.into_iter().collect();
-        if uppercase {
-            uppercase_first(&word)
-        } else {
-            word
-        }
+
+        word.into_iter().collect()
     }
 
     /// Implement a `digits` generation
