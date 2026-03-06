@@ -1,16 +1,16 @@
 # genpass / Human readable password generator
 
-Версия: 0.1.9
+Версия: 0.1.10
 
 ---
 
 RU — Краткое описание
 
-`genpass` — простая утилита на Rust для генерации удобочитаемых паролей, состоящих из читаемых слов, цифр и специальных символов. Параметры формата задаются компактной строкой-шаблоном (например, `W4_s2_d3`).
+`genpass` — простая утилита на Rust для генерации удобочитаемых паролей, состоящих из читаемых слов, цифр и специальных символов. Параметры формата задаются компактной строкой-шаблоном (например, `W4s2w3d5`).
 
 EN — Short description
 
-`genpass` is a small Rust command-line tool that produces human-readable passwords composed of readable words, digits and special characters. Format is defined by a compact template string (e.g. `W4_s2_d3`).
+`genpass` is a small Rust command-line tool that produces human-readable passwords composed of readable words, digits and special characters. Format is defined by a compact template string (e.g. `W4s2w3d5`).
 
 ---
 
@@ -57,19 +57,22 @@ RU — Использование / Примеры
 Синтаксис:
 
 ```text
-genpass [-n|--quantity COUNT] FORMAT
+genpass [options] [FORMAT]
 ```
 
 Примеры:
 
 ```bash
-# 1 пароль по шаблону W4_s2_d3
-cargo run -- W4_s2_d3
+# 3 пароля по умолчанию (default count = 3)
+cargo run -- W4s2w3d5
 # или, если собрали релиз
-./target/release/genpass W4_s2_d3
+./target/release/genpass W4s2w3d5
 
-# 5 паролей по шаблону w4_d4
-cargo run -- -n 5 w4_d4
+# 5 паролей по шаблону p8d2
+cargo run -- -n 5 p8d2
+
+# Использовать последний формат
+cargo run -- --last -n 2
 ```
 
 EN — Usage / Examples
@@ -77,43 +80,60 @@ EN — Usage / Examples
 Syntax:
 
 ```text
-genpass [-n|--quantity COUNT] FORMAT
+genpass [options] [FORMAT]
 ```
 
 Examples:
 
 ```bash
-# 1 password with format W4_s2_d3
-cargo run -- W4_s2_d3
+# 3 passwords by default
+cargo run -- W4s2w3d5
 # or, if built in release
-./target/release/genpass W4_s2_d3
+./target/release/genpass W4s2w3d5
 
-# 5 passwords with format w4_d4
-cargo run -- -n 5 w4_d4
+# 5 passwords with format p8d2
+cargo run -- -n 5 p8d2
+
+# Reuse the last remembered format
+cargo run -- --last -n 2
 ```
 
 Note: use `cargo run --` to pass arguments to the binary.
+
+RU — Опции
+
+- `-h`, `--help` — показать справку
+- `-V`, `--version` — показать версию
+- `-n`, `--number <N>` — количество паролей (по умолчанию `3`)
+- `-l`, `--last` — использовать последний формат из `~/.genpass_memory`
+
+EN — Options
+
+- `-h`, `--help` — print help
+- `-V`, `--version` — print version
+- `-n`, `--number <N>` — number of passwords (default `3`)
+- `-l`, `--last` — use the last format from `~/.genpass_memory`
 
 ---
 
 RU — Формат шаблона (FORMAT)
 
-FORMAT состоит из частей, разделённых `_`. Каждая часть имеет вид `[x][n]`:
-- `x` — тип: `w` (слово), `W` (слово с заглавной), `d` (цифры), `s` (спецсимволы)
-- `n` — длина элемента (1..=10)
+FORMAT это компактная строка из пар `[x][n]` без разделителей:
+- `x` — тип: `w`, `W`, `p`, `P`, `d`, `s`
+- `n` — длина элемента (по умолчанию `1`, если не указана)
 
 Ограничения:
-- Длина части 2 или 3 (например `w4` или `w10`), максимальная длина 10.
+- Максимальная длина каждого элемента: `255`.
 - При ошибке форматирования программа выведет сообщение об ошибке и завершится с кодом 1.
 
 EN — Format (FORMAT)
 
-FORMAT is composed of parts separated by `_`. Each part is `[x][n]`:
-- `x` — type: `w` (word), `W` (word with capitalized first letter), `d` (digits), `s` (special chars)
-- `n` — element length (1..=10)
+FORMAT is a compact sequence of `[x][n]` pairs without separators:
+- `x` — type: `w`, `W`, `p`, `P`, `d`, `s`
+- `n` — element length (defaults to `1` when omitted)
 
 Constraints:
-- Each part must be length 2 or 3 (e.g. `w4` or `w10`), maximum length is 10.
+- Maximum segment length is `255`.
 - On invalid format the program prints errors and exits with code 1.
 
 ---
@@ -121,22 +141,26 @@ Constraints:
 RU — Описание `Config` и `PassElements` (коротко)
 
 - `Config.format: Vec<Result<PassElements, ConfigError>>` — список элементов шаблона (парсер сохраняет как Ok/Err для подробной диагностики)
-- `Config.quantity: u32` — количество генерируемых паролей (`-n` / `--quantity`)
+- `Config.quantity: u32` — количество генерируемых паролей (`-n` / `--number`, default: `3`)
 
 `PassElements`:
 - `Word(usize)` — читаемое слово (нижний регистр)
 - `UWord(usize)` — читаемое слово с заглавной первой буквой
+- `PWord(usize)` — читаемое «произносимое» слово (digraph-паттерн)
+- `UPWord(usize)` — произносимое слово с заглавной первой буквой
 - `Digits(usize)` — цифры
 - `Special(usize)` — спецсимволы
 
 EN — `Config` and `PassElements` (short)
 
 - `Config.format: Vec<Result<PassElements, ConfigError>>` — list of parsed format elements (Ok/Err kept for diagnostics)
-- `Config.quantity: u32` — number of passwords to generate (`-n` / `--quantity`)
+- `Config.quantity: u32` — number of passwords to generate (`-n` / `--number`, default: `3`)
 
 `PassElements`:
 - `Word(usize)` — readable word (lowercase)
 - `UWord(usize)` — readable word with capitalized first letter
+- `PWord(usize)` — pronounceable word (digraph-based)
+- `UPWord(usize)` — pronounceable word with capitalized first letter
 - `Digits(usize)` — digits
 - `Special(usize)` — special characters
 
@@ -158,25 +182,27 @@ EN — How generator works
 
 RU — Примеры вывода
 
-- `W4_s2_d3` -> пример: `Dihu#?123` (результат случайный)
-- `w4_d4` -> пример: `benu1234`
+- `W4s2w3d5` -> пример: `Cyvi!:wof90943` (результат случайный)
+- `p8d2` -> пример: `theeng42`
 
 EN — Example outputs
 
-- `W4_s2_d3` -> example: `Dihu#?123` (output is random)
-- `w4_d4` -> example: `benu1234`
+- `W4s2w3d5` -> example: `Cyvi!:wof90943` (output is random)
+- `p8d2` -> example: `theeng42`
 
 ---
 
 RU — Тесты и лицензия
 
-- Тестов в репозитории не обнаружено.
-- Лицензия: проект теперь распространяется под MIT License (файл `LICENSE` добавлен).
+- В проекте есть unit-тесты для парсинга формата и генерации.
+- Запуск тестов: `cargo test`
+- Лицензия: проект распространяется под GNU GPL v3.0 (файл `LICENSE`).
 
 EN — Tests and license
 
-- No tests were found in the repository.
-- License: this project is licensed under the MIT License (see `LICENSE`).
+- The project includes unit tests for format parsing and generation.
+- Run tests with: `cargo test`
+- License: this project is licensed under GNU GPL v3.0 (see `LICENSE`).
 
 ---
 
