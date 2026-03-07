@@ -1,25 +1,71 @@
 use clap::{
     crate_authors, crate_description, crate_version, value_parser, Arg, ArgAction, ArgMatches,
-    Command,
+    Command, Error,
 };
 use std::convert::TryFrom;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::process;
 use thiserror::Error;
 
 const MAX_ELEMENT_LENGTH: usize = 255;
 const LAST_FORMAT_FILE: &str = ".genpass_memory";
+
+fn project_author_name() -> &'static str {
+    // Cargo authors can include email, for example: "name <mail@host>".
+    // C++ output prints only the author name.
+    match crate_authors!().split('<').next() {
+        Some(name) => name.trim(),
+        None => crate_authors!(),
+    }
+}
+
+fn print_version() {
+    println!("Readable password generator by {}", project_author_name());
+    println!("genpass version: {}", crate_version!());
+}
+
+fn print_help() {
+    println!("genpass [options] [format]\n");
+    println!("options:");
+    println!("  -h [ --help ]    produce help message");
+    println!("  -v [ --version ] print version");
+    println!("  -n [ --number ]  number of passwords (default = 3)");
+    println!("  -l [ --last ]    use last remembered format\n");
+    println!("format (optional if --last is used):");
+    println!("  W - uppercase word (randomly plain/pronounceable)");
+    println!("  w - lowercase word (randomly plain/pronounceable)");
+    println!("  d - digit             s - special symbol\n");
+    println!("Example: genpass W4s2w3d5  -> 'Cyvi!:wof90943'");
+    println!("         genpass w6d2      -> readable like 'theeng42'");
+    println!("The last used format is remembered for --last.");
+}
+
+fn normalize_clap_error_message(err: &Error) -> String {
+    let text = err.to_string();
+    let first = text
+        .lines()
+        .find(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.to_ascii_lowercase().starts_with("usage:")
+        })
+        .unwrap_or("invalid options");
+
+    first
+        .trim()
+        .trim_start_matches("error:")
+        .trim_start_matches("Error:")
+        .trim()
+        .to_string()
+}
 
 /// Parts of the password to be constructed
 #[derive(Debug)]
 pub enum PassElements {
     Word(usize),    // Readable words
     UWord(usize),   // Readable words started with upper case letter
-    PWord(usize),   // Pronounceable words
-    UPWord(usize),  // Pronounceable words started with upper case letter
     Digits(usize),  // Digits
     Special(usize), // Special symbols
 }
@@ -31,8 +77,6 @@ impl PartialEq for PassElements {
         match (self, other) {
             (Word(a), Word(b))
             | (UWord(a), UWord(b))
-            | (PWord(a), PWord(b))
-            | (UPWord(a), UPWord(b))
             | (Digits(a), Digits(b))
             | (Special(a), Special(b)) => a == b,
             _ => false,
@@ -79,8 +123,6 @@ impl TryFrom<&String> for PassElements {
         match element_type {
             'W' => Ok(Self::UWord(len)),
             'w' => Ok(Self::Word(len)),
-            'P' => Ok(Self::UPWord(len)),
-            'p' => Ok(Self::PWord(len)),
             'd' => Ok(Self::Digits(len)),
             's' => Ok(Self::Special(len)),
             c => Err(ConfigError::InvalidElementType(c)),
@@ -148,9 +190,25 @@ fn parse_elements(value: &str) -> Vec<Result<PassElements, ConfigError>> {
 impl Config {
     fn command() -> Command {
         Command::new("genpass")
+            .disable_help_flag(true)
+            .disable_version_flag(true)
             .version(crate_version!())
             .author(crate_authors!())
             .about(crate_description!())
+            .arg(
+                Arg::new("help")
+                    .short('h')
+                    .long("help")
+                    .action(ArgAction::SetTrue)
+                    .help("Print help and exit"),
+            )
+            .arg(
+                Arg::new("version")
+                    .short('v')
+                    .long("version")
+                    .action(ArgAction::SetTrue)
+                    .help("Print version and exit"),
+            )
             .arg(
                 Arg::new("number")
                     .short('n')
@@ -175,13 +233,23 @@ impl Config {
                     .value_name("FORMAT")
                     .required(false)
                     .help(
-                        "Password format in compact form (example: W4s2w3d5, p8d2). \
+                        "Password format in compact form (example: W4s2w3d5, w8d2). \
                          Segment length defaults to 1 when omitted.",
                     ),
             )
     }
 
     fn from_matches(matches: ArgMatches) -> Self {
+        if matches.get_flag("version") {
+            print_version();
+            process::exit(0);
+        }
+
+        if matches.get_flag("help") {
+            print_help();
+            process::exit(0);
+        }
+
         let use_last = matches.get_flag("last");
         let mut raw_format = matches
             .get_one::<String>("format")
@@ -210,8 +278,14 @@ impl Config {
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
     {
-        let matches = Self::command().get_matches_from(args);
-        Self::from_matches(matches)
+        match Self::command().try_get_matches_from(args) {
+            Ok(matches) => Self::from_matches(matches),
+            Err(err) => {
+                eprintln!("ERROR: {}", normalize_clap_error_message(&err));
+                eprintln!("genpass [options] [format]");
+                process::exit(1);
+            }
+        }
     }
 
     /// Parse a command line and return Result with Config
@@ -223,31 +297,28 @@ impl Config {
     /// if any. If password elements are fine then return Config for the further
     /// processing.
     pub fn check(self) -> Self {
-        let mut bad_fmt_index = vec![];
-        let mut error_flag = false;
+        if self.raw_format.is_empty() {
+            eprintln!("No format given. Use --last to recall last format or provide format.");
+            eprintln!("genpass [options] [format]");
+            process::exit(1);
+        }
 
-        for (pos, el) in self.format.iter().enumerate() {
+        let mut errors: Vec<String> = Vec::new();
+
+        for el in &self.format {
             if let Err(er) = el {
-                eprintln!("Error: {}\n\n", er);
-                bad_fmt_index.push(pos + 1);
-                error_flag = true;
+                errors.push(er.to_string());
             }
         }
 
-        if error_flag {
-            eprint!("Incorrect password element(s) ##: ");
-            for i in bad_fmt_index {
-                eprint!("{} ", i);
+        if !errors.is_empty() {
+            for err in errors {
+                eprintln!("ERROR: {}", err);
             }
-            eprintln!("\n\nFormat: [x][n]");
-            eprintln!("  where x could be 'w', 'W', 'p', 'P', 'd', 's'");
-            eprintln!("        n - optional element length (defaults to 1)");
-            eprintln!("  MAX element's length = {}", MAX_ELEMENT_LENGTH);
-            eprintln!("\n\nExample: genpass W4s2w3d5");
-            eprintln!("Or use last: genpass --last");
-            eprintln!("========");
-            eprintln!("Will produce something like: Cyvi!:wof90943");
-            std::process::exit(1);
+            eprintln!("Allowed format letters: W w d s");
+            eprintln!("Length must be 1..{} for each segment", MAX_ELEMENT_LENGTH);
+            eprintln!("genpass [options] [format]");
+            process::exit(1);
         }
 
         save_last_format(&self.raw_format);
@@ -264,6 +335,7 @@ impl Default for Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_home_dir() -> PathBuf {
         let nanos = SystemTime::now()
@@ -289,11 +361,11 @@ mod tests {
 
     #[test]
     fn parse_default_lengths_success() {
-        let parsed = parse_elements("Wpds");
+        let parsed = parse_elements("Wwds");
 
         assert_eq!(parsed.len(), 4);
         assert!(matches!(parsed[0], Ok(PassElements::UWord(1))));
-        assert!(matches!(parsed[1], Ok(PassElements::PWord(1))));
+        assert!(matches!(parsed[1], Ok(PassElements::Word(1))));
         assert!(matches!(parsed[2], Ok(PassElements::Digits(1))));
         assert!(matches!(parsed[3], Ok(PassElements::Special(1))));
     }
@@ -325,18 +397,27 @@ mod tests {
     fn cli_uses_last_format_when_requested() {
         let home = unique_home_dir();
         fs::create_dir_all(&home).expect("must create test home directory");
-        fs::write(home.join(LAST_FORMAT_FILE), "p8d2\n").expect("must write last format file");
+        fs::write(home.join(LAST_FORMAT_FILE), "w8d2\n").expect("must write last format file");
 
         env::set_var("HOME", &home);
         let cfg = Config::from_args(["genpass", "--last", "-n", "2"]);
 
         assert_eq!(cfg.quantity, 2);
-        assert_eq!(cfg.raw_format, "p8d2");
+        assert_eq!(cfg.raw_format, "w8d2");
         assert_eq!(cfg.format.len(), 2);
-        assert!(matches!(cfg.format[0], Ok(PassElements::PWord(8))));
+        assert!(matches!(cfg.format[0], Ok(PassElements::Word(8))));
         assert!(matches!(cfg.format[1], Ok(PassElements::Digits(2))));
 
         let _ = fs::remove_file(home.join(LAST_FORMAT_FILE));
         let _ = fs::remove_dir(home);
+    }
+
+    #[test]
+    fn parse_pronounceable_tokens_are_rejected() {
+        let lower = parse_elements("p8");
+        let upper = parse_elements("P8");
+
+        assert!(matches!(lower[0], Err(ConfigError::InvalidElementType('p'))));
+        assert!(matches!(upper[0], Err(ConfigError::InvalidElementType('P'))));
     }
 }

@@ -68,8 +68,8 @@ cargo run -- W4s2w3d5
 # или, если собрали релиз
 ./target/release/genpass W4s2w3d5
 
-# 5 паролей по шаблону p8d2
-cargo run -- -n 5 p8d2
+# 5 паролей по шаблону w8d2
+cargo run -- -n 5 w8d2
 
 # Использовать последний формат
 cargo run -- --last -n 2
@@ -91,8 +91,8 @@ cargo run -- W4s2w3d5
 # or, if built in release
 ./target/release/genpass W4s2w3d5
 
-# 5 passwords with format p8d2
-cargo run -- -n 5 p8d2
+# 5 passwords with format w8d2
+cargo run -- -n 5 w8d2
 
 # Reuse the last remembered format
 cargo run -- --last -n 2
@@ -103,14 +103,14 @@ Note: use `cargo run --` to pass arguments to the binary.
 RU — Опции
 
 - `-h`, `--help` — показать справку
-- `-V`, `--version` — показать версию
+- `-v`, `--version` — показать версию
 - `-n`, `--number <N>` — количество паролей (по умолчанию `3`)
 - `-l`, `--last` — использовать последний формат из `~/.genpass_memory`
 
 EN — Options
 
 - `-h`, `--help` — print help
-- `-V`, `--version` — print version
+- `-v`, `--version` — print version
 - `-n`, `--number <N>` — number of passwords (default `3`)
 - `-l`, `--last` — use the last format from `~/.genpass_memory`
 
@@ -119,7 +119,7 @@ EN — Options
 RU — Формат шаблона (FORMAT)
 
 FORMAT это компактная строка из пар `[x][n]` без разделителей:
-- `x` — тип: `w`, `W`, `p`, `P`, `d`, `s`
+- `x` — тип: `w`, `W`, `d`, `s`
 - `n` — длина элемента (по умолчанию `1`, если не указана)
 
 Ограничения:
@@ -129,7 +129,7 @@ FORMAT это компактная строка из пар `[x][n]` без ра
 EN — Format (FORMAT)
 
 FORMAT is a compact sequence of `[x][n]` pairs without separators:
-- `x` — type: `w`, `W`, `p`, `P`, `d`, `s`
+- `x` — type: `w`, `W`, `d`, `s`
 - `n` — element length (defaults to `1` when omitted)
 
 Constraints:
@@ -183,12 +183,12 @@ EN — How generator works
 RU — Примеры вывода
 
 - `W4s2w3d5` -> пример: `Cyvi!:wof90943` (результат случайный)
-- `p8d2` -> пример: `theeng42`
+- `w8d2` -> пример: `theeng42`
 
 EN — Example outputs
 
 - `W4s2w3d5` -> example: `Cyvi!:wof90943` (output is random)
-- `p8d2` -> example: `theeng42`
+- `w8d2` -> example: `theeng42`
 
 ---
 
